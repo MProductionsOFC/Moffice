@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>M Office - Ultimate Edition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --m-word: #2b579a;
+            --m-excel: #217346;
+            --m-ppt: #b7472a;
+            --m-forms: #7248b9;
+            --dark-bg: #111111;
+            --light-bg: #f0f2f5;
+            --card: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { display: flex; height: 100vh; background-color: var(--light-bg); overflow: hidden; }
+
+        /* SIDEBAR */
+        .m-sidebar { width: 65px; background: var(--dark-bg); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; z-index: 100; }
+        .m-logo { color: white; font-weight: bold; font-size: 22px; border: 2px solid white; padding: 5px; border-radius: 8px; margin-bottom: 10px; }
+        .nav-item { width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; cursor: pointer; transition: 0.3s; opacity: 0.4; }
+        .nav-item.active { opacity: 1; transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .bg-word { background: var(--m-word); }
+        .bg-excel { background: var(--m-excel); }
+        .bg-ppt { background: var(--m-ppt); }
+        .bg-forms { background: var(--m-forms); }
+
+        /* VIEWPORT */
+        .m-viewport { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .m-app { display: none; flex-direction: column; height: 100%; padding: 12px; animation: fadeIn 0.3s ease; }
+        .m-app.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* HEADER */
+        .m-header { background: var(--card); padding: 10px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .m-filename { border: none; font-weight: 600; font-size: 16px; outline: none; width: 160px; background: transparent; }
+        .btn-action { border: none; padding: 8px 14px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+
+        /* WORD TOOLBAR */
+        .toolbar { display: flex; gap: 6px; padding: 10px; background: white; border-radius: 12px 12px 0 0; border-bottom: 1px solid #eee; overflow-x: auto; align-items: center; }
+        .toolbar button, .toolbar select, .toolbar input[type="color"] { padding: 6px; border: 1px solid #e5e7eb; background: #fff; border-radius: 6px; min-width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .editor { flex: 1; background: white; padding: 25px; border-radius: 0 0 12px 12px; outline: none; overflow-y: auto; font-size: 16px; line-height: 1.6; }
+
+        /* EXCEL FX & GRID */
+        .excel-fx { background: white; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .fx-icon { color: var(--m-excel); font-weight: bold; font-style: italic; }
+        .fx-input { flex: 1; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; outline: none; }
+        .grid-wrapper { flex: 1; background: white; overflow: auto; border-radius: 0 0 12px 12px; }
+        .m-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+        .m-table th, .m-table td { border: 1px solid #e0e0e0; width: 100px; height: 32px; padding: 0 5px; text-align: left; font-size: 13px; overflow: hidden; }
+        .m-table th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; text-align: center; }
+        .m-table td:first-child { background: #f8f9fa; position: sticky; left: 0; z-index: 5; text-align: center; width: 40px; }
+        .m-table td:focus { outline: 2px solid var(--m-excel); background: #e8f5e9; }
+
+        /* PPT CANVAS & THUMBS */
+        .ppt-top-nav { display: flex; align-items: center; gap: 10px; overflow-x: auto; padding: 8px 0; }
+        .thumb { min-width: 80px; height: 45px; background: white; border: 2px solid transparent; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 11px; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .thumb.active { border-color: var(--m-ppt); font-weight: bold; }
+        .btn-add-slide { width: 45px; height: 45px; background: var(--m-ppt); color: white; border-radius: 8px; border: none; flex-shrink: 0; font-size: 20px; cursor: pointer; }
+        .canvas { flex: 1; background: white; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 40px; outline: none; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .canvas img { max-width: 80%; max-height: 200px; margin: 15px auto; border-radius: 8px; }
+
+        /* FORMS CARDS */
+        .forms-toolbar { display: flex; gap: 8px; overflow-x: auto; background: white; padding: 12px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .btn-add-q { background: #f0ebf8; color: var(--m-forms); border: 1px solid var(--m-forms); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 12px; white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .forms-scroll { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+        .form-card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 12px; border-left: 5px solid var(--m-forms); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .btn-opt { font-size: 11px; padding: 4px 8px; margin-top: 10px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; }
+
+        /* PREVIEW OVERLAY */
+        #preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; color: white; }
+        .preview-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .preview-slide { background: white; color: black; width: 100%; max-width: 800px; aspect-ratio: 16/9; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; border-radius: 8px; }
+        
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; display: none; z-index: 3000; }
+        
+        /* Hidden file input */
+        #universal-file-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">Sucesso!</div>
+    <input type="file" id="universal-file-input" accept="image/*">
+    
+    <!-- PPT PREVIEW -->
+    <div id="preview-overlay">
+        <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8);">
+            <span>Apresentação M-Office</span>
+            <button onclick="closePreview()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="preview-body">
+            <div id="preview-content" class="preview-slide"></div>
+        </div>
+        <div style="padding: 20px; display: flex; justify-content: center; gap: 30px; background: rgba(0,0,0,0.8);">
+            <button onclick="prevS()" style="padding: 10px 20px; cursor:pointer;">Anterior</button>
+            <button onclick="nextS()" style="padding: 10px 20px; cursor:pointer;">Próximo</button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <nav class="m-sidebar">
+        <div class="m-logo">M</div>
+        <div class="nav-item bg-word active" onclick="nav('word')"><i class="fa-solid fa-file-word"></i></div>
+        <div class="nav-item bg-excel" onclick="nav('excel')"><i class="fa-solid fa-file-excel"></i></div>
+        <div class="nav-item bg-ppt" onclick="nav('ppt')"><i class="fa-solid fa-file-powerpoint"></i></div>
+        <div class="nav-item bg-forms" onclick="nav('forms')"><i class="fa-solid fa-file-lines"></i></div>
+    </nav>
+
+    <div class="m-viewport">
+        
+        <!-- M-WORD -->
+        <div id="app-word" class="m-app active">
+            <header class="m-header">
+                <input type="text" id="fn-word" class="m-filename" value="Documento_M.docx">
+                <button class="btn-action bg-word" onclick="exportFile('word')"><i class="fa-solid fa-save"></i> Guardar</button>
+            </header>
+            <div class="toolbar">
+                <button onclick="exec('bold')"><b>B</b></button>
+                <button onclick="exec('italic')"><i>I</i></button>
+                <button onclick="exec('underline')"><u>U</u></button>
+                <select onchange="exec('fontSize', this.value)">
+                    <option value="3">12pt</option><option value="4">14pt</option>
+                    <option value="5">18pt</option><option value="6">24pt</option>
+                </select>
+                <input type="color" onchange="exec('foreColor', this.value)">
+                <button onclick="exec('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+                <button onclick="exec('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+                <button onclick="triggerImageUpload('word')"><i class="fa-solid fa-image"></i></button>
+            </div>
+            <div id="word-body" class="editor" contenteditable="true">
+                <h1 style="text-align: center;">Bem-vindo ao M-Word</h1>
+                <p>O seu editor de texto profissional completo.</p>
+            </div>
+        </div>
+
+        <!-- M-EXCEL -->
+        <div id="app-excel" class="m-app">
+            <header class="m-header">
+                <input type="text" id="fn-excel" class="m-filename" value="Planilha_Financeira.csv">
+                <button class="btn-action bg-excel" onclick="exportFile('excel')"><i class="fa-solid fa-file-export"></i> Exportar</button>
+            </header>
+            <div class="excel-fx">
+                <span class="fx-icon">fx</span>
+                <input type="text" id="fx-display" class="fx-input" placeholder="Editar conteúdo da célula...">
+            </div>
+            <div class="grid-wrapper">
+                <table id="excel-table" class="m-table"></table>
+            </div>
+        </div>
+
+        <!-- M-PPT -->
+        <div id="app-ppt" class="m-app">
+            <header class="m-header">
+                <input type="text" id="fn-ppt" class="m-filename" value="Minha_Apresentacao.html">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-action" style="background:#444" onclick="openPreview()"><i class="fa-solid fa-play"></i></button>
+                    <button class="btn-action bg-ppt" onclick="exportFile('ppt')">Salvar</button>
+                </div>
+            </header>
+            <div class="ppt-top-nav">
+                <button class="btn-add-slide" onclick="addSlide()"><i class="fa-solid fa-plus"></i></button>
+                <button onclick="triggerImageUpload('ppt')" style="padding:10px; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer;"><i class="fa-solid fa-image"></i></button>
+                <div id="ppt-thumbs" style="display: flex; gap: 8px;"></div>
+            </div>
+            <div id="ppt-canvas" class="canvas" contenteditable="true">
+                <h1>Título do Slide</h1>
+                <p>Clique aqui para editar ou adicione uma imagem da galeria.</p>
+            </div>
+        </div>
+
+        <!-- M-FORMS -->
+        <div id="app-forms" class="m-app">
+            <header class="m-header">
+                <input type="text" id="fn-forms" class="m-filename" value="Inscricao_Evento.txt">
+                <button class="btn-action bg-forms" onclick="exportFile('forms')">Guardar</button>
+            </header>
+            <div class="forms-toolbar">
+                <div class="btn-add-q" onclick="addQ('name')"><i class="fa-solid fa-user"></i> Nome</div>
+                <div class="btn-add-q" onclick="addQ('email')"><i class="fa-solid fa-envelope"></i> E-mail</div>
+                <div class="btn-add-q" onclick="addQ('multi')"><i class="fa-solid fa-list-ul"></i> Opções</div>
+                <div class="btn-add-q" onclick="addQ('date')"><i class="fa-solid fa-calendar"></i> Data</div>
+                <div class="btn-add-q" onclick="addQ('text')"><i class="fa-solid fa-paragraph"></i> Texto</div>
+            </div>
+            <div class="forms-scroll" id="forms-body">
+                <div class="form-card">
+                    <h2 contenteditable="true">Título do Questionário</h2>
+                    <p contenteditable="true">Instruções para os participantes.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // GLOBALS
+        const toast = document.getElementById('toast');
+        const fileInput = document.getElementById('universal-file-input');
+        let uploadTarget = 'word';
+
+        function showMsg(m) { toast.innerText = m; toast.style.display = 'block'; setTimeout(() => toast.style.display = 'none', 2000); }
+
+        function nav(id) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.m-app').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.bg-${id}`).classList.add('active');
+            document.getElementById(`app-${id}`).classList.add('active');
+        }
+
+        // IMAGE HANDLER (GALLERY)
+        function triggerImageUpload(target) {
+            uploadTarget = target;
+            fileInput.click();
+        }
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    if (uploadTarget === 'word') {
+                        document.execCommand('insertImage', false, imageData);
+                    } else if (uploadTarget === 'ppt') {
+                        insertImageToPPT(imageData);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+            this.value = ''; // Reset for same file re-upload
+        });
+
+        // WORD
+        function exec(cmd, val=null) { document.execCommand(cmd, false, val); document.getElementById('word-body').focus(); }
+
+        // EXCEL PRO
+        const exTable = document.getElementById('excel-table');
+        const fxIn = document.getElementById('fx-display');
+        let activeCell = null;
+
+        function initExcel() {
+            const cols = ["", "A", "B", "C", "D", "E", "F", "G", "H"];
+            let html = "<tr>";
+            cols.forEach(c => html += `<th>${c}</th>`);
+            html += "</tr>";
+
+            for(let i=1; i<=100; i++) {
+                html += `<tr><td>${i}</td>`;
+                for(let j=1; j<cols.length; j++) {
+                    html += `<td contenteditable="true"></td>`;
+                }
+                html += "</tr>";
+            }
+            exTable.innerHTML = html;
+
+            exTable.addEventListener('focusin', (e) => {
+                if(e.target.tagName === 'TD' && e.target.cellIndex !== 0) {
+                    activeCell = e.target;
+                    fxIn.value = activeCell.innerText;
+                }
+            });
+
+            fxIn.addEventListener('input', () => { if(activeCell) activeCell.innerText = fxIn.value; });
+        }
+        initExcel();
+
+        // PPT ENGINE (FULL + IMAGES)
+        let slides = [{h: "Título do Slide", p: "Clique aqui para editar ou adicione uma imagem da galeria.", img: ""}];
+        let currentSlide = 0;
+
+        function renderThumbs() {
+            const container = document.getElementById('ppt-thumbs');
+            container.innerHTML = '';
+            slides.forEach((s, i) => {
+                const d = document.createElement('div');
+                d.className = `thumb ${i === currentSlide ? 'active' : ''}`;
+                d.innerText = `Slide ${i+1}`;
+                d.onclick = () => loadSlide(i);
+                container.appendChild(d);
+            });
+        }
+
+        function loadSlide(i) {
+            const canvas = document.getElementById('ppt-canvas');
+            // Save state
+            slides[currentSlide].h = canvas.querySelector('h1').innerHTML;
+            slides[currentSlide].p = canvas.querySelector('p').innerHTML;
+            const existingImg = canvas.querySelector('img');
+            slides[currentSlide].img = existingImg ? existingImg.src : "";
+
+            // Load next
+            currentSlide = i;
+            canvas.querySelector('h1').innerHTML = slides[i].h;
+            canvas.querySelector('p').innerHTML = slides[i].p;
+            
+            // Re-render image if exists
+            if(canvas.querySelector('img')) canvas.querySelector('img').remove();
+            if(slides[i].img) {
+                const img = document.createElement('img');
+                img.src = slides[i].img;
+                canvas.appendChild(img);
+            }
+            renderThumbs();
+        }
+
+        function addSlide() {
+            slides.push({h: "Novo Slide", p: "Adicione conteúdo...", img: ""});
+            loadSlide(slides.length - 1);
+        }
+
+        function insertImageToPPT(dataUrl) {
+            const canvas = document.getElementById('ppt-canvas');
+            let img = canvas.querySelector('img');
+            if(!img) {
+                img = document.createElement('img');
+                canvas.appendChild(img);
+            }
+            img.src = dataUrl;
+            slides[currentSlide].img = dataUrl;
+        }
+
+        function openPreview() {
+            loadSlide(currentSlide); // Save current
+            document.getElementById('preview-overlay').style.display = 'flex';
+            updatePreview();
+        }
+        function closePreview() { document.getElementById('preview-overlay').style.display = 'none'; }
+        function updatePreview() {
+            const el = document.getElementById('preview-content');
+            const s = slides[currentSlide];
+            el.innerHTML = `<h1>${s.h}</h1><p style="margin-top:20px">${s.p}</p>`;
+            if(s.img) el.innerHTML += `<img src="${s.img}" style="max-width:70%; border-radius:10px; margin-top:20px;">`;
+        }
+        function nextS() { if(currentSlide < slides.length-1) { currentSlide++; updatePreview(); renderThumbs(); } }
+        function prevS() { if(currentSlide > 0) { currentSlide--; updatePreview(); renderThumbs(); } }
+        renderThumbs();
+
+        // FORMS ENGINE (RE-ADDED FIELDS)
+        function addQ(type) {
+            const body = document.getElementById('forms-body');
+            const card = document.createElement('div');
+            card.className = 'form-card';
+            let inner = "";
+
+            if(type === 'name') {
+                inner = `<p contenteditable="true"><b>Nome Completo:</b></p>
+                         <div style="margin-top:10px; border-bottom: 1px solid #ddd; padding: 8px 0; color: #888;"><i class="fa-solid fa-user"></i> Campo de resposta curta</div>`;
+            } else if(type === 'email') {
+                inner = `<p contenteditable="true"><b>Endereço de E-mail:</b></p>
+                         <div style="margin-top:10px; border-bottom: 1px solid #ddd; padding: 8px 0; color: #888;"><i class="fa-solid fa-envelope"></i> email@exemplo.com</div>`;
+            } else if(type === 'multi') {
+                inner = `<p contenteditable="true"><b>Múltipla Escolha:</b></p>
+                         <div class="opts" style="margin-top:10px;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                                <input type="radio" disabled> <span contenteditable="true">Opção 1</span>
+                            </div>
+                         </div>
+                         <button class="btn-opt" onclick="addOption(this)">+ Adicionar Opção</button>`;
+            } else if(type === 'date') {
+                inner = `<p contenteditable="true"><b>Data do Evento:</b></p>
+                         <input type="date" style="margin-top:10px; padding:8px; border:1px solid #eee; border-radius:6px; width:100%" disabled>`;
+            } else {
+                inner = `<p contenteditable="true"><b>Sua Pergunta:</b></p>
+                         <div style="margin-top:10px; border:1px solid #eee; min-height:60px; border-radius:6px; padding:10px; color:#ccc;">Escreva aqui...</div>`;
+            }
+
+            card.innerHTML = inner;
+            body.appendChild(card);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function addOption(btn) {
+            const box = btn.previousElementSibling;
+            const div = document.createElement('div');
+            div.style.cssText = "display:flex; align-items:center; gap:8px; margin-bottom:5px;";
+            div.innerHTML = `<input type="radio" disabled> <span contenteditable="true">Nova Opção</span>`;
+            box.appendChild(div);
+        }
+
+        // EXPORT
+        function exportFile(type) {
+            const name = document.getElementById(`fn-${type}`).value;
+            let content = "", mime = "text/plain";
+
+            if(type === 'word') { content = document.getElementById('word-body').innerHTML; mime = "text/html"; }
+            else if(type === 'excel') { 
+                mime = "text/csv";
+                content = Array.from(exTable.querySelectorAll('tr')).map(r => Array.from(r.querySelectorAll('th,td')).map(c => `"${c.innerText}"`).join(",")).join("\n");
+            }
+            else if(type === 'ppt') { content = JSON.stringify(slides); }
+            else { content = document.getElementById('forms-body').innerText; }
+
+            const blob = new Blob([content], {type: mime});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+            showMsg(`"${name}" exportado!`);
+        }
+    </script>
+</body>
+</html>
